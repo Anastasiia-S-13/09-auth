@@ -1,72 +1,52 @@
 "use client";
+import css from "./page.module.css";
 
-import { keepPreviousData, useQuery} from "@tanstack/react-query"
-import css from "./page.module.css"
-import SearchBox from "@/components/SearchBox/SearchBox"
-import { useEffect, useState } from "react"
-import { useDebouncedCallback } from "use-debounce"
-import NoteList from "@/components/NoteList/NoteList"
-// import Modal from "@/components/Modal/Modal"
-// import NoteForm from "@/components/NoteForm/NoteForm"
-import Pagination from "@/components/Pagination/Pagination"
-import fetchNotes from "@/lib/api/api";
-import toast, { Toaster } from "react-hot-toast"
-import { NoteTag } from "@/types/note";
+import fetchNotes from "@/lib/api/clientApi";
+import SearchBox from "@/components/SearchBox/SearchBox";
+import Pagination from "@/components/Pagination/Pagination";
+import NoteList from "@/components/NoteList/NoteList";
+
 import Link from "next/link";
+import { useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useDebouncedCallback } from "use-debounce";
 
+export default function NotesClient({ tag }: { tag?: string }) {
+  const [searchWord, setSearchWord] = useState<string>("");
+  const [page, setPage] = useState(1);
 
+  const handleChange = useDebouncedCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchWord(event.target.value);
+      setPage(1);
+    },
+    1000,
+  );
 
-export default function NoteDetails({ tag }: { tag?: string }) {
-    const [inputValue, setInputValue] = useState<string>(""); 
-    const [searchWord, setSearchWord] = useState<string>("");
-    // const [openModal, setOpenModal] = useState(false);
-    const [page, setPage] = useState(1);
+  const { data } = useQuery({
+    queryKey: ["myNoteHubKey", searchWord, page, tag],
+    queryFn: () => fetchNotes(searchWord, page, tag),
+    placeholderData: keepPreviousData,
+  });
 
-    // const handleOpenModal = () => {
-    //     setOpenModal(true);
-    // }
-
-    // const handleCloseModal = () => {
-    //     setOpenModal(false);
-    // }
-
-    const updateSearchWord = useDebouncedCallback((value: string) => {
-    setSearchWord(value);
-    setPage(1);
-  }, 1000);
-
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setInputValue(value);      
-    updateSearchWord(value); 
-  };
-
-
-    const { data } = useQuery({
-        queryKey: ['notes', searchWord, page, tag],
-        queryFn: () => fetchNotes(searchWord, page, tag as NoteTag | undefined),
-        placeholderData: keepPreviousData,
-    })
-
-    useEffect(() => {
-        if (data?.notes.length === 0) {
-         toast.error("Not found...")
-    }
-   }, [data])
-
-
-    return <div className={css.app}>
-        <div className={css.toolbar}>
-            <SearchBox onChange={handleChange} value={inputValue}/>
-            {data && data?.totalPages > 1 && <Pagination totalPages={data?.totalPages ?? 0} page={page} onPageChange={(newPage) => setPage(newPage)} />}
-            <Link className={css.button} href="/notes/action/create">Create note +</Link>
-        </div>
-        <Toaster/>
-       {data && data.notes.length > 0 && <NoteList notes={data.notes} />}
-        {/* {openModal && (
-            <Modal onClose={handleCloseModal}>
-                <NoteForm onClose={handleCloseModal}/>
-            </Modal>
-        )} */}
+  return (
+    <div className={css.app}>
+      <div className={css.toolbar}>
+        {<SearchBox value={searchWord} onChange={handleChange} />}
+        {data && data?.notes.length > 0 && (
+          <Pagination
+            totalPages={data?.totalPages ?? 0}
+            page={page}
+            onPageChange={(newPage) => setPage(newPage)}
+          />
+        )}
+        {
+          <Link className={css.button} href={"/notes/action/create"}>
+            Create note +
+          </Link>
+        }
+      </div>
+      {data && data?.notes.length > 0 && <NoteList notes={data?.notes} />}
     </div>
-};
+  );
+}

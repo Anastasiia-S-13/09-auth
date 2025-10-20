@@ -1,8 +1,8 @@
-import fetchNotes from "@/lib/api/api";
 import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 import NoteDetails from "./Notes.client";
 import { NoteTag } from "@/types/note";
 import { Metadata } from "next";
+import fetchNotes from "@/lib/api/clientApi";
 
 
 type SlugProps = {
