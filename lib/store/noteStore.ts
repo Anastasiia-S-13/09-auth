@@ -27,4 +27,3 @@ export const useNoteDraftStore = create<NoteDraftStore>()(
     }
   )
 );
-// перевірка для себе
